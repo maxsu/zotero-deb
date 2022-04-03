@@ -9,6 +9,10 @@ zotero:
     5.0.96.2: 3
     5.0.96.3: 3
     5.0.97.57+07df7d0de: 3
+  app: https://www.zotero.org/download/client/dl?channel=release&platform=linux-{arch}&version={version}
+  beta: https://www.zotero.org/download/standalone/dl?platform=linux-{arch}&channel=beta
+  beta_version_regex: client/beta/([^/]+)-beta
+  releases: https://www.zotero.org/download/client/manifests/release/updates-linux-x86_64.json
 jurism:
   description: Juris-M is a free, easy-to-use tool to help you collect, organize, cite, and share research
   dependencies:
@@ -17,4 +21,10 @@ jurism:
     - libreoffice-java-common
   bump:
     5.0.93m18: 3
+  app: https://github.com/Juris-M/assets/releases/download/client%2Frelease%2F{version}/Jurism-{version}_linux-{arch}.tar.bz2
+  releases: https://github.com/Juris-M/assets/releases/download/client%2Freleases%2Fincrementals-linux/incrementals-release-linux
+archmap:
+  i686: i386
+  x86_64: amd64
 staging: staging
+user_agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36

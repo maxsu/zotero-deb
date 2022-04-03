@@ -7,6 +7,7 @@ import contextlib
 import configparser
 from pathlib import Path
 
+from requests import Session
 from ruamel.yaml import YAML
 yaml=YAML(typ='safe')
 
@@ -54,12 +55,12 @@ Config.staging = Path(Config.staging)
 Config.zotero.bumped = lambda version: bumped('zotero', version)
 Config.jurism.bumped = lambda version: bumped('jurism', version)
 
-Config.archmap = {
-  'i686': 'i386',
-  'x86_64': 'amd64',
-}
+## set UA for web requests
+session = Session()
+session.headers['User-Agent'] = Config.user_agent
+get = session.get
 
-  # context manager to open file for reading or writing, and in the case of write, create paths as required
+# context manager to open file for reading or writing, and in the case of write, create paths as required
 class Open():
   def __init__(self, path, mode='r', fmode=None):
     self.path = path

@@ -3,7 +3,6 @@
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv(), override=True)
 
-from requests import Session
 import os, sys
 import argparse
 from urllib.parse import quote_plus as urlencode, unquote
@@ -18,14 +17,10 @@ import shlex
 #from github3 import login as ghlogin
 import html
 
-from util import run, Config
+from util import run, Config, get
 
 if Config.mode == 'apt':
   import apt as repository
-
-## set UA for web requests
-request = Session()
-request.headers.update({ 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36' })
 
 Config.repo.mkdir(parents=True, exist_ok=True)
 
@@ -34,31 +29,31 @@ packages = []
 print('Finding Zotero versions...')
 # zotero
 packages += [
-  ('zotero', Config.zotero.bumped(release['version']), Config.archmap[arch], f'https://www.zotero.org/download/client/dl?channel=release&platform=linux-{arch}&version={release["version"]}')
-  for release in request.get('https://www.zotero.org/download/client/manifests/release/updates-linux-x86_64.json').json()
-  for arch in [ 'i686', 'x86_64' ]
+  ('zotero', Config.zotero.bumped(release['version']), Config.archmap[arch], Config.zotero.app.format(arch=arch, version=release["version"]))
+  for release in get(Config.zotero.releases).json()
+  for arch in Config.archmap
 ] + [
-  ('zotero-beta', Config.zotero.bumped(unquote(re.match(r'https://download.zotero.org/client/beta/([^/]+)', url)[1]).replace('-beta', '')), Config.archmap[arch], url)
+  ('zotero-beta', Config.zotero.bumped(unquote(re.search(Config.zotero.beta_version_regex, url).group(1))), Config.archmap[arch], url)
   for arch, url in [
-    (arch, request.get(f'https://www.zotero.org/download/standalone/dl?platform=linux-{arch}&channel=beta').url)
-    for arch in [ 'i686', 'x86_64' ]
+    (arch, get(Config.zotero.beta.format(arch=arch)).url)
+    for arch in Config.archmap
   ]
 ]
 
 print('Finding Juris-M versions...')
 # jurism
 packages += [
-  ('jurism', Config.jurism.bumped(version), Config.archmap[arch], f'https://github.com/Juris-M/assets/releases/download/client%2Frelease%2F{version}/Jurism-{version}_linux-{arch}.tar.bz2')
+  ('jurism', Config.jurism.bumped(version), Config.archmap[arch], Config.jurism.app.format(arch=arch, version=version))
 
   for version in ({
     version.rsplit('m', 1)[0] : version
     for version in sorted([
       version
-      for version in request.get('https://github.com/Juris-M/assets/releases/download/client%2Freleases%2Fincrementals-linux/incrementals-release-linux').text.split('\n')
+      for version in get(Config.jurism.releases).text.split('\n')
       if version != ''
     ], key=lambda k: tuple([int(v) for v in re.split('[m.]', k)]))
   }.values())
-  for arch in [ 'i686', 'x86_64' ]
+  for arch in Config.archmap
 ]
 print([v[:3] for v in packages])
 
