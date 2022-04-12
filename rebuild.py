@@ -3,7 +3,6 @@
 from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv(), override=True)
 
-from requests import Session
 import os, sys
 import argparse
 from urllib.parse import quote_plus as urlencode, unquote
@@ -18,14 +17,10 @@ import shlex
 #from github3 import login as ghlogin
 import html
 
-from util import run, Config
+from util import run, Config, get
 
 if Config.mode == 'apt':
   import apt as repository
-
-## set UA for web requests
-request = Session()
-request.headers.update({ 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.47 Safari/537.36' })
 
 Config.repo.mkdir(parents=True, exist_ok=True)
 
@@ -34,7 +29,7 @@ packages = []
 # zotero
 print('Finding Zotero versions...')
 for arch, deb_arch in Config.archmap.items():
-  for release in request.get('https://www.zotero.org/download/client/manifests/release/updates-linux-x86_64.json').json():
+  for release in get('https://www.zotero.org/download/client/manifests/release/updates-linux-x86_64.json').json():
     packages.append(
       (
         'zotero',
@@ -46,7 +41,7 @@ for arch, deb_arch in Config.archmap.items():
 
 print('Finding Zotero beta versions...')
 for arch, deb_arch in Config.archmap.items():
-  beta_url = request.get(f'https://www.zotero.org/download/standalone/dl?platform=linux-{arch}&channel=beta').url
+  beta_url = get(f'https://www.zotero.org/download/standalone/dl?platform=linux-{arch}&channel=beta').url
   beta_version = unquote(re.match(r'https://download.zotero.org/client/beta/([^/]+)-beta', beta_url).group(1))
   packages.append(
     (
@@ -61,7 +56,7 @@ for arch, deb_arch in Config.archmap.items():
 print('Finding Juris-M versions...')
 # jurism
 for arch, deb_arch in Config.archmap.items():
-  versions = request.get('https://github.com/Juris-M/assets/releases/download/client%2Freleases%2Fincrementals-linux/incrementals-release-linux').text.splitlines()
+  versions = get('https://github.com/Juris-M/assets/releases/download/client%2Freleases%2Fincrementals-linux/incrementals-release-linux').text.splitlines()
   versions = filter(None, versions)
   versions = sorted(versions, key=lambda k: tuple(int(v) for v in re.split('[m.]', k)))
   versions = {v.rsplit('m')[0] : v for v in versions}.values()

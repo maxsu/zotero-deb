@@ -7,6 +7,7 @@ import contextlib
 import configparser
 from pathlib import Path
 
+from requests import Session
 from ruamel.yaml import YAML
 yaml=YAML(typ='safe')
 
@@ -83,3 +84,8 @@ def IniFile(path):
   ini.optionxform=str
   ini.read(path)
   yield ini
+
+## set UA for web requests
+session = Session()
+session.headers['User-Agent'] = Config.user_agent
+get = session.get
