@@ -29,20 +29,21 @@ packages = []
 # zotero
 print('Finding Zotero versions...')
 for arch, deb_arch in Config.archmap.items():
-  for release in get('https://www.zotero.org/download/client/manifests/release/updates-linux-x86_64.json').json():
+  for release in get(Config.zotero.release_url).json():
+    version = release['version']
     packages.append(
       (
         'zotero',
-        Config.zotero.bumped(release['version']),
+        Config.zotero.bumped(version),
         deb_arch,
-        f'https://www.zotero.org/download/client/dl?channel=release&platform=linux-{arch}&version={release["version"]}'
+        Config.zotero.app_url.format(arch=arch, version=version)
       )
     )
 
 print('Finding Zotero beta versions...')
 for arch, deb_arch in Config.archmap.items():
-  beta_url = get(f'https://www.zotero.org/download/standalone/dl?platform=linux-{arch}&channel=beta').url
-  beta_version = unquote(re.match(r'https://download.zotero.org/client/beta/([^/]+)-beta', beta_url).group(1))
+  beta_url = get(Config.zotero.beta_url.format(arch=arch)).url
+  beta_version = unquote(re.match(Config.zotero.beta_version_regex, beta_url).group(1))
   packages.append(
     (
       'zotero-beta',
@@ -56,7 +57,7 @@ for arch, deb_arch in Config.archmap.items():
 print('Finding Juris-M versions...')
 # jurism
 for arch, deb_arch in Config.archmap.items():
-  versions = get('https://github.com/Juris-M/assets/releases/download/client%2Freleases%2Fincrementals-linux/incrementals-release-linux').text.splitlines()
+  versions = get(Config.jurism.release_url).text.splitlines()
   versions = filter(None, versions)
   versions = sorted(versions, key=lambda k: tuple(int(v) for v in re.split('[m.]', k)))
   versions = {v.rsplit('m')[0] : v for v in versions}.values()
@@ -67,7 +68,7 @@ for arch, deb_arch in Config.archmap.items():
         'jurism',
         Config.jurism.bumped(version),
         deb_arch,
-        f'https://github.com/Juris-M/assets/releases/download/client%2Frelease%2F{version}/Jurism-{version}_linux-{arch}.tar.bz2'
+        Config.jurism.app_url.format(arch=arch, version=version),
       )
     )
 
