@@ -24,58 +24,59 @@ if Config.mode == 'apt':
 
 Config.repo.mkdir(parents=True, exist_ok=True)
 
-packages = []
+class Packages:
+  """Collects package information for build"""
+  
+  _packages = []
+  
+  def add(self, client, version, arch, url_template):
+    """Given package information, create a package name and url"""
+    base_client = client.split('-')[0] 
+    self._packages.append(
+      (
+        Config.repo / repository.packagename(
+          client,
+          Config[base_client].bumped(version),
+          Config.archmap[arch]
+        ),
+        url_template.format(arch=arch, version=version)
+      )
+    )
+  
+  def __iter__(self):
+    yield from self._packages
+
+packages = Packages()
 
 # zotero
 print('Finding Zotero versions...')
-for arch, deb_arch in Config.archmap.items():
+for arch in Config.archmap:
   for release in get(Config.zotero.release_url).json():
     version = release['version']
-    packages.append(
-      (
-        'zotero',
-        Config.zotero.bumped(version),
-        deb_arch,
-        Config.zotero.app_url.format(arch=arch, version=version)
-      )
-    )
+    packages.add('zotero', version, arch, Config.zotero.app_url)
 
+# zotero beta
 print('Finding Zotero beta versions...')
-for arch, deb_arch in Config.archmap.items():
-  beta_url = get(Config.zotero.beta_url.format(arch=arch)).url
-  beta_version = unquote(re.match(Config.zotero.beta_version_regex, beta_url).group(1))
-  packages.append(
-    (
-      'zotero-beta',
-      Config.zotero.bumped(beta_version),
-      deb_arch,
-      beta_url
-    )
-  ) 
+for arch in Config.archmap:
+  beta_app_url = get(Config.zotero.beta_url.format(arch=arch)).url
+  version = unquote(re.match(Config.zotero.beta_version_regex, beta_app_url).group(1))
+  packages.add('zotero-beta', version, arch, beta_app_url)
 
 
-print('Finding Juris-M versions...')
 # jurism
-for arch, deb_arch in Config.archmap.items():
+print('Finding Juris-M versions...')
+for arch in Config.archmap:
   versions = get(Config.jurism.release_url).text.splitlines()
   versions = filter(None, versions)
   versions = sorted(versions, key=lambda k: tuple(int(v) for v in re.split('[m.]', k)))
   versions = {v.rsplit('m')[0] : v for v in versions}.values()
 
   for version in versions:
-    packages.append(
-      (
-        'jurism',
-        Config.jurism.bumped(version),
-        deb_arch,
-        Config.jurism.app_url.format(arch=arch, version=version),
-      )
-    )
+    packages.add('jurism', version, arch, Config.jurism.app_url)
 
-print([v[:3] for v in packages])
+print([pkg.stem for pkg, _ in packages])
 
 prebuilt = set(repository.prebuilt())
-packages = [ (Config.repo / repository.packagename(client, version, arch), url) for client, version, arch, url in packages ]
 
 modified = False
 allowed = set([pkg for pkg, url in packages])
